@@ -89,13 +89,13 @@ public final class ApolloStore {
     }
   }
 
-  func subscribe(_ subscriber: ApolloStoreSubscriber) {
+  public func subscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
       self.subscribers.append(subscriber)
     }
   }
 
-  func unsubscribe(_ subscriber: ApolloStoreSubscriber) {
+  public func unsubscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
       self.subscribers = self.subscribers.filter({ $0 !== subscriber })
     }
