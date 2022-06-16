@@ -36,7 +36,7 @@ public final class ApolloStore {
 
   private let cache: NormalizedCache
 
-  private var subscribers: [ApolloStoreSubscriber] = []
+  private var subscribers: NSHashTable<AnyObject> = NSHashTable<AnyObject>.weakObjects()
 
   /// Designated initializer
   ///
@@ -47,8 +47,10 @@ public final class ApolloStore {
   }
 
   fileprivate func didChangeKeys(_ changedKeys: Set<CacheKey>, identifier: UUID?) {
-    for subscriber in self.subscribers {
-      subscriber.store(self, didChangeKeys: changedKeys, contextIdentifier: identifier)
+    for subscriber in self.subscribers.allObjects {
+      if let subscriber = subscriber as? ApolloStoreSubscriber {
+        subscriber.store(self, didChangeKeys: changedKeys, contextIdentifier: identifier)
+      }
     }
   }
 
@@ -91,13 +93,17 @@ public final class ApolloStore {
 
   public func subscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
-      self.subscribers.append(subscriber)
+      self.subscribers.add(subscriber as AnyObject)
     }
   }
 
   public func unsubscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
-      self.subscribers = self.subscribers.filter({ $0 !== subscriber })
+      let newSubscribers = NSHashTable<AnyObject>.weakObjects()
+      self.subscribers.allObjects.filter({ $0 !== subscriber }).forEach {
+        newSubscribers.add($0)
+      }
+      self.subscribers = newSubscribers
     }
   }
 
