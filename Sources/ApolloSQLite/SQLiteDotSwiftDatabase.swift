@@ -62,9 +62,9 @@ public final class SQLiteDotSwiftDatabase: SQLiteDatabase {
   
   ///[Fractal] Modification to fetch all fragments of a given type via CacheKey pattern
   ///
-  public func fetchRecords(matching pattern: CacheKey) throws -> [DatabaseRow] {
-    let wildcardPattern = "%\(pattern)%"
-    let query = self.records.filter(keyColumn.like(wildcardPattern))
+  public func fetchRecords(matching pattern: String) throws -> [DatabaseRow] {
+//    let wildcardPattern = "%\(pattern)%"
+    let query = self.records.filter(keyColumn.like(pattern))
     return try self.db.prepareRowIterator(query).map { row in
       let record = row[self.recordColumn]
       let key = row[self.keyColumn]

@@ -14,7 +14,7 @@ public final class InMemoryNormalizedCache: NormalizedCache {
   }
   
   //[Fractal] Empty as we don't use the InMemory Cache
-  public func fetchRecords(matching pattern: CacheKey) throws -> [CacheKey: Record] {
+  public func fetchRecords(matching pattern: String) throws -> [CacheKey: Record] {
     return [CacheKey: Record]()
   }
 
