@@ -9,6 +9,12 @@ public protocol NormalizedCache {
   /// - Returns: A dictionary of cache keys to records containing the records that have been found.
   func loadRecords(forKeys keys: Set<CacheKey>) throws -> [CacheKey: Record]
     
+  ///[Fractal] Modification to fetch all records matching a CacheKey pattern
+  ///So that we can get all fragments of a given type
+  ///
+  func fetchRecords(matching pattern: CacheKey) throws -> [CacheKey: Record]
+  
+  
   /// Merges a set of records into the cache.
   ///
   /// - Parameters:

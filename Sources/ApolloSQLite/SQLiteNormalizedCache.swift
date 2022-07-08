@@ -101,6 +101,14 @@ extension SQLiteNormalizedCache: NormalizedCache {
                                 })
   }
   
+  public func fetchRecords(matching pattern: CacheKey) throws -> [CacheKey: Record] {
+    return [CacheKey: Record](uniqueKeysWithValues:
+                                try fetchRecords(matching: pattern)
+                                .map { record in
+                                  (record.key, record)
+                                })
+  }
+  
   public func merge(records: RecordSet) throws -> Set<CacheKey> {
     return try mergeRecords(records: records)
   }
