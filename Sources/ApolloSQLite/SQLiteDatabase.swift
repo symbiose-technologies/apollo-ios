@@ -16,7 +16,7 @@ public protocol SQLiteDatabase {
   
   func selectRawRows(forKeys keys: Set<CacheKey>) throws -> [DatabaseRow]
 
-  func fetchRecords(matching pattern: CacheKey) throws -> [DatabaseRow]
+  func fetchKeys(matching pattern: String) throws -> [CacheKey]
   
   func addOrUpdateRecordString(_ recordString: String, for cacheKey: CacheKey) throws
   

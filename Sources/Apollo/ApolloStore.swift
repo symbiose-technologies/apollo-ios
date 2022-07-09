@@ -34,7 +34,7 @@ public final class ApolloStore {
 
   private let queue: DispatchQueue
 
-  private let cache: NormalizedCache
+  let cache: NormalizedCache
 
   private var subscribers: NSHashTable<AnyObject> = NSHashTable<AnyObject>.weakObjects()
 
@@ -183,10 +183,28 @@ public final class ApolloStore {
     fileprivate let cacheKeyForObject: CacheKeyForObject?
 
     fileprivate lazy var loader: DataLoader<CacheKey, Record> = DataLoader(self.cache.loadRecords)
-
+    
+  
+    
     fileprivate init(store: ApolloStore) {
       self.cache = store.cache
       self.cacheKeyForObject = store.cacheKeyForObject
+    }
+
+    public func fetchAllFragments<FragmentType: GraphQLFragment>(frag: FragmentType) throws -> [FragmentType] {
+        let mapper = GraphQLSelectionSetMapper<FragmentType>()
+        //get the keys -- then iterate through them, w/readObject
+        do {
+            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
+            var results = [FragmentType]()
+            for cacheKey in keys {
+                do {
+                  let res = try self.readObject(ofType: FragmentType.self, withKey: cacheKey)
+                    results.append(res)
+                }
+            }
+            return results
+        }
     }
 
     public func read<Query: GraphQLQuery>(query: Query) throws -> Query.Data {
