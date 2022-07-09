@@ -79,14 +79,6 @@ public final class SQLiteNormalizedCache {
     try self.database.selectRawRows(forKeys: keys)
       .map { try self.parse(row: $0) }
   }
-  fileprivate func selectRecords(matching pattern: String) throws -> [Record] {
-    try self.database.fetchRecords(matching: pattern)
-      .map { try self.parse(row: $0) }
-  }
-  fileprivate func getRecordKeys(matching pattern: String) throws -> [String] {
-    try self.database.fetchRecords(matching: pattern)
-      .map { $0.cacheKey }
-  }
   
 
   private func parse(row: DatabaseRow) throws -> Record {
@@ -111,12 +103,12 @@ extension SQLiteNormalizedCache: NormalizedCache {
   }
   
   public func fetchKeys(matching pattern: String) throws -> [CacheKey] {
-      return self.getRecordKeys(matching: pattern)
+    try self.database.fetchKeys(matching: pattern)
   }
     
   public func fetchRecords(matching pattern: String) throws -> [CacheKey: Record] {
       let keys = try self.fetchKeys(matching: pattern)
-      return self.loadRecords(forKeys: Set(keys))
+      return try self.loadRecords(forKeys: Set(keys))
   }
   
   public func merge(records: RecordSet) throws -> Set<CacheKey> {
