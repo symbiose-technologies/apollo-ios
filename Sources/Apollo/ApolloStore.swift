@@ -191,7 +191,7 @@ public final class ApolloStore {
       self.cacheKeyForObject = store.cacheKeyForObject
     }
 
-    public func fetchAllFragments<FragmentType: GraphQLFragment>(frag: FragmentType) throws -> [FragmentType] {
+    public func fetchAllFragments<FragmentType: GraphQLFragment>(fragType: FragmentType.Type) throws -> [FragmentType] {
         let mapper = GraphQLSelectionSetMapper<FragmentType>()
         //get the keys -- then iterate through them, w/readObject
         do {
@@ -199,7 +199,7 @@ public final class ApolloStore {
             var results = [FragmentType]()
             for cacheKey in keys {
                 do {
-                  let res = try self.readObject(ofType: FragmentType.self, withKey: cacheKey)
+                  let res = try self.readObject(ofType: fragType, withKey: cacheKey)
                     results.append(res)
                 }
             }
