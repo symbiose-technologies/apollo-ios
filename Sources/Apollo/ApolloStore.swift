@@ -316,7 +316,7 @@ public final class ApolloStore {
                 withKey: key, variables: variables)
     }
 
-    private func write(object: JSONObject,
+    public func write(object: JSONObject,
                        forSelections selections: [GraphQLSelection],
                        withKey key: CacheKey,
                        variables: GraphQLMap?) throws {
