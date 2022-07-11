@@ -195,7 +195,12 @@ public final class ApolloStore {
         let mapper = GraphQLSelectionSetMapper<FragmentType>()
         //get the keys -- then iterate through them, w/readObject
         do {
-            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
+          var keys: Set<CacheKey> = Set()
+          for pType in FragmentType.possibleTypes {
+            let tKeys = try self.cache.fetchKeys(matching: "\(pType)!%")
+            keys = keys.union(Set(tKeys))
+          }
+//            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
             var results = [FragmentType]()
             for cacheKey in keys {
                 do {
