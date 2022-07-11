@@ -201,6 +201,8 @@ public final class ApolloStore {
                 do {
                   let res = try self.readObject(ofType: fragType, withKey: cacheKey)
                     results.append(res)
+                } catch {
+                  print("[ApolloStore] \(FragmentType.self) fetchAllFragments failed to readObject with cacheKey: \(cacheKey) error: \(error)")
                 }
             }
             return results
