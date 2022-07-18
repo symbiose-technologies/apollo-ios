@@ -32,7 +32,7 @@ public protocol ApolloStoreSubscriber: AnyObject {
 public final class ApolloStore {
   public var cacheKeyForObject: CacheKeyForObject?
 
-  private let queue: DispatchQueue
+  let queue: DispatchQueue
 
   let cache: NormalizedCache
 
