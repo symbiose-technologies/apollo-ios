@@ -12,6 +12,16 @@ public final class InMemoryNormalizedCache: NormalizedCache {
       result[key] = records[key]
     }
   }
+  public func fetchKeys(matching pattern: String) throws -> [CacheKey] {
+    let keys: [String] = []
+    return keys
+  }
+
+  //[Fractal] Empty as we don't use the InMemory Cache
+  public func fetchRecords(matching pattern: String) throws -> [CacheKey: Record] {
+    return [CacheKey: Record]()
+  }
+
 
   public func removeRecord(for key: CacheKey) throws {
     records.removeRecord(for: key)

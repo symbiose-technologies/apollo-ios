@@ -60,6 +60,17 @@ public final class SQLiteDotSwiftDatabase: SQLiteDatabase {
     try self.db.run(query.delete())
   }
   
+  ///[Fractal] Modification to fetch all fragments of a given type via CacheKey pattern
+  ///
+  public func fetchKeys(matching pattern: String) throws -> [CacheKey] {
+//    let wildcardPattern = "%\(pattern)%"
+    let query = self.records.filter(keyColumn.like(pattern))
+    return try self.db.prepareRowIterator(query).map { row in
+      let key = row[self.keyColumn]
+      return key
+    }
+  }
+  
   public func clearDatabase(shouldVacuumOnClear: Bool) throws {
     try self.db.run(records.delete())
     if shouldVacuumOnClear {

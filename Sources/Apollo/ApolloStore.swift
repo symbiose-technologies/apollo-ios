@@ -34,9 +34,9 @@ public final class ApolloStore {
 
   private let queue: DispatchQueue
 
-  private let cache: NormalizedCache
+  let cache: NormalizedCache
 
-  private var subscribers: [ApolloStoreSubscriber] = []
+  private var subscribers: NSHashTable<AnyObject> = NSHashTable<AnyObject>.weakObjects()
 
   /// Designated initializer
   ///
@@ -47,8 +47,10 @@ public final class ApolloStore {
   }
 
   fileprivate func didChangeKeys(_ changedKeys: Set<CacheKey>, identifier: UUID?) {
-    for subscriber in self.subscribers {
-      subscriber.store(self, didChangeKeys: changedKeys, contextIdentifier: identifier)
+    for subscriber in self.subscribers.allObjects {
+      if let subscriber = subscriber as? ApolloStoreSubscriber {
+        subscriber.store(self, didChangeKeys: changedKeys, contextIdentifier: identifier)
+      }
     }
   }
 
@@ -89,15 +91,19 @@ public final class ApolloStore {
     }
   }
 
-  func subscribe(_ subscriber: ApolloStoreSubscriber) {
+  public func subscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
-      self.subscribers.append(subscriber)
+      self.subscribers.add(subscriber as AnyObject)
     }
   }
 
-  func unsubscribe(_ subscriber: ApolloStoreSubscriber) {
+  public func unsubscribe(_ subscriber: ApolloStoreSubscriber) {
     queue.async(flags: .barrier) {
-      self.subscribers = self.subscribers.filter({ $0 !== subscriber })
+      let newSubscribers = NSHashTable<AnyObject>.weakObjects()
+      self.subscribers.allObjects.filter({ $0 !== subscriber }).forEach {
+        newSubscribers.add($0)
+      }
+      self.subscribers = newSubscribers
     }
   }
 
@@ -177,10 +183,28 @@ public final class ApolloStore {
     fileprivate let cacheKeyForObject: CacheKeyForObject?
 
     fileprivate lazy var loader: DataLoader<CacheKey, Record> = DataLoader(self.cache.loadRecords)
-
+    
+  
+    
     fileprivate init(store: ApolloStore) {
       self.cache = store.cache
       self.cacheKeyForObject = store.cacheKeyForObject
+    }
+
+    public func fetchAllFragments<FragmentType: GraphQLFragment>(frag: FragmentType) throws -> [FragmentType] {
+        let mapper = GraphQLSelectionSetMapper<FragmentType>()
+        //get the keys -- then iterate through them, w/readObject
+        do {
+            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
+            var results = [FragmentType]()
+            for cacheKey in keys {
+                do {
+                  let res = try self.readObject(ofType: FragmentType.self, withKey: cacheKey)
+                    results.append(res)
+                }
+            }
+            return results
+        }
     }
 
     public func read<Query: GraphQLQuery>(query: Query) throws -> Query.Data {
