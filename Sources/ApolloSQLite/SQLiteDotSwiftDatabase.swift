@@ -59,6 +59,15 @@ public final class SQLiteDotSwiftDatabase: SQLiteDatabase {
 
     try self.db.run(query.delete())
   }
+    
+    public func fetchRows(matching pattern: String) throws -> [DatabaseRow] {
+        let query = self.records.filter(keyColumn.like(pattern))
+        return try self.db.prepareRowIterator(query).map { row in
+          let key = row[self.keyColumn]
+          let record = row[self.recordColumn]
+          return DatabaseRow(cacheKey: key, storedInfo: record)
+        }
+    }
   
   ///[Fractal] Modification to fetch all fragments of a given type via CacheKey pattern
   ///
