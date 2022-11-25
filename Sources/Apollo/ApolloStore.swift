@@ -206,7 +206,7 @@ public final class ApolloStore {
                     let res = try self.fetchObject(ofType: fragType, onObject: record)
                     results.append(res)
                 } catch {
-                    print("[ApolloStore] \(FragmentType.self) fetchAllFragments failed to readObject with object: \(record) error: \(error)")
+//                    print("[ApolloStore] \(FragmentType.self) fetchAllFragments failed to readObject with object: \(record) error: \(error)")
                 }
             }
             return results
