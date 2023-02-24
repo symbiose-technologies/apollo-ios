@@ -8,9 +8,12 @@ public class MockWebSocket: WebSocketClient {
   public var delegate: WebSocketClientDelegate? = nil
   public var isConnected: Bool = false
     
-  public required init(request: URLRequest) {
-    self.request = request
-  }
+    public required init(request: URLRequest, protocol: WebSocket.WSProtocol) {
+        self.request = request
+      self.request.setValue(`protocol`.description, forHTTPHeaderField: WebSocket.Constants.headerWSProtocolName)
+    }
+    
+    
   
   open func reportDidConnect() {
     callbackQueue.async {

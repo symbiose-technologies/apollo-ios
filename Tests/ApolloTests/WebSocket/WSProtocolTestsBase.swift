@@ -35,14 +35,13 @@ class WSProtocolTestsBase: XCTestCase {
   }
 
   // MARK: Helpers
-
   var urlRequest: URLRequest {
     fatalError("Subclasses must override this property!")
   }
 
-  func buildWebSocket() {
+  func buildWebSocket(protocol: WebSocket.WSProtocol) {
     mockWebSocketDelegate = MockWebSocketDelegate()
-    mockWebSocket = MockWebSocket(request: urlRequest)
+    mockWebSocket = MockWebSocket(request: urlRequest, protocol: `protocol`)
     websocketTransport = WebSocketTransport(websocket: mockWebSocket, store: store)
   }
 
