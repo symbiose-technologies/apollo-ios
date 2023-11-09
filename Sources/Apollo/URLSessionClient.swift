@@ -47,6 +47,14 @@ open class URLSessionClient: NSObject, URLSessionDelegate, URLSessionTaskDelegat
   /// The raw URLSession being used for this client
   open private(set) var session: URLSession!
   
+    public func replaceSessionDelegate(_ newDel: URLSessionDelegate) {
+        self.session = URLSession(configuration: self.session.configuration,
+                                  delegate: newDel,
+                                  delegateQueue: self.session.delegateQueue
+        )
+        
+    }
+    
   private var hasBeenInvalidated = Atomic<Bool>(false)
   
   private var hasNotBeenInvalidated: Bool {

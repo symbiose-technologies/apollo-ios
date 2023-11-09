@@ -55,7 +55,7 @@ public class WebSocketTransport {
 
   private var subscribers = [String: (Result<JSONObject, Error>) -> Void]()
   private var subscriptions : [String: String] = [:]
-  let processingQueue = DispatchQueue(label: "com.apollographql.WebSocketTransport")
+    let processingQueue = DispatchQueue(label: "com.apollographql.WebSocketTransport")
 
   private let sendOperationIdentifiers: Bool
   private let reconnectionInterval: TimeInterval
@@ -524,6 +524,7 @@ extension WebSocketTransport: WebSocketClientDelegate {
       return
     }
 
+      //TODO: see if changing this queue changes performance
     DispatchQueue.main.asyncAfter(deadline: .now() + reconnectionInterval) { [weak self] in
       guard let self = self else { return }
       self.socketConnectionState.mutate { socketConnectionState in
