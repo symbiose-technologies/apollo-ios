@@ -15,8 +15,12 @@ class GraphqlWsProtocolTests: WSProtocolTestsBase {
 
     return request
   }
-
-  // MARK: Initializer Tests
+    
+    private func buildWebSocket() {
+        buildWebSocket(protocol: .graphql_ws)
+    }
+  
+    // MARK: Initializer Tests
 
   func test__designatedInitializer__shouldSetRequestProtocolHeader() {
     expect(

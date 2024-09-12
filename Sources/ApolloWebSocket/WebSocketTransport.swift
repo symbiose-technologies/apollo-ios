@@ -55,7 +55,7 @@ public class WebSocketTransport {
 
   private var subscribers = [String: (Result<JSONObject, Error>) -> Void]()
   private var subscriptions : [String: String] = [:]
-  let processingQueue = DispatchQueue(label: "com.apollographql.WebSocketTransport")
+    let processingQueue = DispatchQueue(label: "com.apollographql.WebSocketTransport")
 
   private let sendOperationIdentifiers: Bool
   private let reconnectionInterval: TimeInterval
@@ -269,7 +269,7 @@ public class WebSocketTransport {
   }
 
   deinit {
-    websocket.disconnect()
+    websocket.disconnect(forceTimeout: nil)
     self.websocket.delegate = nil
   }
 
@@ -280,12 +280,14 @@ public class WebSocketTransport {
                                               autoPersistQuery: false)
     let identifier = operationMessageIdCreator.requestId()
 
-    var type: OperationMessage.Types = .start
-    if case WebSocket.WSProtocol.graphql_transport_ws.description = websocket.request.value(forHTTPHeaderField: WebSocket.Constants.headerWSProtocolName) {
-      type = .subscribe
+    let messageType: OperationMessage.Types
+    switch websocket.request.wsProtocol {
+    case .graphql_ws: messageType = .start
+    case .graphql_transport_ws: messageType = .subscribe
+    default: return nil
     }
 
-    guard let message = OperationMessage(payload: body, id: identifier, type: type).rawMessage else {
+    guard let message = OperationMessage(payload: body, id: identifier, type: messageType).rawMessage else {
       return nil
     }
 
@@ -302,7 +304,13 @@ public class WebSocketTransport {
   }
 
   public func unsubscribe(_ subscriptionId: String) {
-    let str = OperationMessage(id: subscriptionId, type: .stop).rawMessage
+    let messageType: OperationMessage.Types
+    switch websocket.request.wsProtocol {
+    case .graphql_transport_ws: messageType = .complete
+    default: messageType = .stop
+    }
+
+    let str = OperationMessage(id: subscriptionId, type: messageType).rawMessage
 
     processingQueue.async {
       if let str = str {
@@ -335,7 +343,7 @@ public class WebSocketTransport {
     let oldReconnectValue = reconnect.value
     self.reconnect.mutate { $0 = false }
 
-    self.websocket.disconnect()
+    self.websocket.disconnect(forceTimeout: 0)
     self.websocket.connect()
 
     self.reconnect.mutate { $0 = oldReconnectValue }
@@ -344,10 +352,11 @@ public class WebSocketTransport {
   /// Disconnects the websocket while setting the auto-reconnect value to false,
   /// allowing purposeful disconnects that do not dump existing subscriptions.
   /// NOTE: You will receive an error on the subscription (should be a `WebSocket.WSError` with code 1000) when the socket disconnects.
+  /// ALSO NOTE: In case pauseWebSocketConnection is called when app is backgrounded, app might get suspended within 5 seconds. In case disconnect did not complete within that time, websocket won't resume properly. That is why forceTimeout is set to 2 seconds.
   /// ALSO NOTE: To reconnect after calling this, you will need to call `resumeWebSocketConnection`.
   public func pauseWebSocketConnection() {
     self.reconnect.mutate { $0 = false }
-    self.websocket.disconnect()
+    self.websocket.disconnect(forceTimeout: 2.0)
   }
   
   /// Reconnects a paused web socket.
@@ -356,6 +365,20 @@ public class WebSocketTransport {
   public func resumeWebSocketConnection(autoReconnect: Bool = true) {
     self.reconnect.mutate { $0 = autoReconnect }
     self.websocket.connect()
+  }
+}
+
+extension URLRequest {
+  fileprivate var wsProtocol: WebSocket.WSProtocol? {
+    guard let header = value(forHTTPHeaderField: WebSocket.Constants.headerWSProtocolName) else {
+      return nil
+    }
+
+    switch header {
+    case WebSocket.WSProtocol.graphql_transport_ws.description: return .graphql_transport_ws
+    case WebSocket.WSProtocol.graphql_ws.description: return .graphql_ws
+    default: return nil
+    }
   }
 }
 
@@ -501,6 +524,7 @@ extension WebSocketTransport: WebSocketClientDelegate {
       return
     }
 
+      //TODO: see if changing this queue changes performance
     DispatchQueue.main.asyncAfter(deadline: .now() + reconnectionInterval) { [weak self] in
       guard let self = self else { return }
       self.socketConnectionState.mutate { socketConnectionState in

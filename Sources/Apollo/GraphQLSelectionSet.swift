@@ -61,6 +61,10 @@ public struct GraphQLField: GraphQLSelection {
     self.type = type
   }
 
+    public func resultMapKey() -> String {
+        return self.name
+    }
+    
   public func cacheKey(with variables: [String: JSONEncodable]?) throws -> String {
     if
       let argumentValues = try arguments?.evaluate(with: variables),

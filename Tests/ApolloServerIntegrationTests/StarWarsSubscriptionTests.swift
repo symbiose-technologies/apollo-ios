@@ -411,7 +411,8 @@ class StarWarsSubscriptionTests: XCTestCase {
   func testConcurrentConnectAndCloseConnection() {
     let webSocketTransport = WebSocketTransport(
       websocket: MockWebSocket(
-        request: URLRequest(url: TestServerURL.starWarsWebSocket.url)
+        request: URLRequest(url: TestServerURL.starWarsWebSocket.url),
+        protocol: .graphql_ws
       ),
       store: ApolloStore()
     )
@@ -500,7 +501,7 @@ class StarWarsSubscriptionTests: XCTestCase {
     self.wait(for: [subscriptionExpectation], timeout: 10)
 
     // Cancel subscription so it doesn't keep receiving from other tests.
-    reviewAddedSubscription.cancel()    
+    reviewAddedSubscription.cancel()
   }
 }
 

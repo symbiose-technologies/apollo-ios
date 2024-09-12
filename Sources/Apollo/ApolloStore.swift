@@ -32,7 +32,7 @@ public protocol ApolloStoreSubscriber: AnyObject {
 public final class ApolloStore {
   public var cacheKeyForObject: CacheKeyForObject?
 
-  private let queue: DispatchQueue
+  let queue: DispatchQueue
 
   let cache: NormalizedCache
 
@@ -191,20 +191,46 @@ public final class ApolloStore {
       self.cacheKeyForObject = store.cacheKeyForObject
     }
 
-    public func fetchAllFragments<FragmentType: GraphQLFragment>(frag: FragmentType) throws -> [FragmentType] {
-        let mapper = GraphQLSelectionSetMapper<FragmentType>()
+    public func fetchAllFragments<FragmentType: GraphQLFragment>(fragType: FragmentType.Type) throws -> [FragmentType] {
+//        let mapper = GraphQLSelectionSetMapper<FragmentType>()
         //get the keys -- then iterate through them, w/readObject
         do {
-            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
+            var allRecords: [Record] = []
+            for pType in FragmentType.possibleTypes {
+                let records = try self.cache.fetchRecords(matching: "\(pType)!%")
+                allRecords.append(contentsOf: records.values)
+            }
             var results = [FragmentType]()
-            for cacheKey in keys {
+            for record in allRecords {
                 do {
-                  let res = try self.readObject(ofType: FragmentType.self, withKey: cacheKey)
+                    let res = try self.fetchObject(ofType: fragType, onObject: record)
                     results.append(res)
+                } catch {
+//                    print("[ApolloStore] \(FragmentType.self) fetchAllFragments failed to readObject with object: \(record) error: \(error)")
                 }
             }
             return results
         }
+        
+        //THIS WORKS BUT IS INEFFICIENT
+//        do {
+//          var keys: Set<CacheKey> = Set()
+//          for pType in FragmentType.possibleTypes {
+//            let tKeys = try self.cache.fetchKeys(matching: "\(pType)!%")
+//            keys = keys.union(Set(tKeys))
+//          }
+////            let keys = try self.cache.fetchKeys(matching: "\(FragmentType.possibleTypes[0])!%")
+//            var results = [FragmentType]()
+//            for cacheKey in keys {
+//                do {
+//                  let res = try self.readObject(ofType: fragType, withKey: cacheKey)
+//                    results.append(res)
+//                } catch {
+////                  print("[ApolloStore] \(FragmentType.self) fetchAllFragments failed to readObject with cacheKey: \(cacheKey) error: \(error)")
+//                }
+//            }
+//            return results
+//        }
     }
 
     public func read<Query: GraphQLQuery>(query: Query) throws -> Query.Data {
@@ -222,6 +248,33 @@ public final class ApolloStore {
                          variables: variables,
                          accumulator: mapper)
     }
+      
+      public func fetchObject<SelectionSet: GraphQLSelectionSet>(ofType type: SelectionSet.Type, onObject obj: Record) throws -> SelectionSet {
+          let mapper = GraphQLSelectionSetMapper<SelectionSet>()
+          
+          return try execute(selections: type.selections, onLoadedObject: obj, variables: nil, accumulator: mapper)
+      }
+      
+      
+  fileprivate func execute<Accumulator: GraphQLResultAccumulator>(selections: [GraphQLSelection],
+                                                                  onLoadedObject object: Record,
+                                                                  variables: GraphQLMap?,
+                                                                  accumulator: Accumulator) throws -> Accumulator.FinalResult {
+    let executor = GraphQLExecutor { object, info in
+      return object[info.cacheKeyForField]
+    } resolveReference: { reference in
+      self.loadObject(forKey: reference.key)
+    }
+    
+    executor.cacheKeyForObject = self.cacheKeyForObject
+    
+    return try executor.execute(selections: selections,
+                                on: object.fields,
+                                withKey: object.key,
+                                variables: variables,
+                                accumulator: accumulator)
+  }
+      
 
     fileprivate func execute<Accumulator: GraphQLResultAccumulator>(selections: [GraphQLSelection], onObjectWithKey key: CacheKey, variables: GraphQLMap?, accumulator: Accumulator) throws -> Accumulator.FinalResult {
       let object = try loadObject(forKey: key).get()
@@ -316,7 +369,7 @@ public final class ApolloStore {
                 withKey: key, variables: variables)
     }
 
-    private func write(object: JSONObject,
+    public func write(object: JSONObject,
                        forSelections selections: [GraphQLSelection],
                        withKey key: CacheKey,
                        variables: GraphQLMap?) throws {
